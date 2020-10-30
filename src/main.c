@@ -28,6 +28,31 @@
 
 uint32_t SystemCoreClock = 150000000;
 
+#define mainLED_TASK_PRIORITY			(tskIDLE_PRIORITY + 1)
+
+void vLEDFlashTask(void *p) {
+    portTickType xLastWakeTime;
+    const portTickType xFrequency = pdMS_TO_TICKS(100);
+	xLastWakeTime = xTaskGetTickCount();
+
+    for(;;) {
+        //Turn ON PA6 & Turn OFF PA7
+        GPIOA->ODR &= ~(1 << GPIO_PIN_6);
+        GPIOA->ODR |= (1 << GPIO_PIN_7);
+
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        //Turn OFF PA6 & Turn ON PA7
+        GPIOA->ODR |= (1 << GPIO_PIN_6);
+        GPIOA->ODR &= ~(1 << GPIO_PIN_7);
+
+		vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+    }
+
+    vTaskDelete( NULL );
+}
+
 int main(void) {
     // Enable system clocks
     stm32f4_system_init();
@@ -43,5 +68,17 @@ int main(void) {
     GPIOA->ODR |= (1 << GPIO_PIN_6);
     GPIOA->ODR |= (1 << GPIO_PIN_7);
 
+    xTaskCreate( vLEDFlashTask, "LEDx", configMINIMAL_STACK_SIZE, NULL, mainLED_TASK_PRIORITY, ( TaskHandle_t * ) NULL );
+
+	/* Start the scheduler. */
+	vTaskStartScheduler();
+
     return 0;
+}
+
+void vApplicationIdleHook( void );
+
+void vApplicationIdleHook( void )
+{
+	//vCoRoutineSchedule();
 }
